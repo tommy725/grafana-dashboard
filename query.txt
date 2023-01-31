@@ -1,0 +1,63 @@
+app.cars.aggregate([{$group: {_id: { $convert: { input: { $toDate: "$FactoryDepartureDate" }, to: "date"} },count: { $sum: 1 }}}, {$group: {_id: "$_id", totalCount: { $sum: "$count" }}}])
+app.cars.aggregate([{$group: {_id: { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } },count: { $sum: 1 }}}, {$group: {_id: "$_id", totalCount: { $sum: "$count" }}}])
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }, "factory_code" : "$FactoryCode", "model": "$Model" },count: { $sum: 1 }}}])
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }, "factory_code" : "$FactoryCode", "model": "$Model" },count: { $sum: 1 }}}, {$group: {_id: "$_id", totalCount: { $sum: "$count" }}}])
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }, "factory_code" : "$FactoryCode", "model": "$Model" },count: { $sum: 1 }}}, {$group: {_id: { date: { $dateFromString: { dateString: "$_id.date" } }, FactoryCode: "$_id.factory_code", Model: "$_id.model"}, totalCount: { $sum: "$count" }}}])
+
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }, "factory_code" : "$FactoryCode", "model": "$Model" },count: { $sum: 1 }}}])
+
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }}, "count1": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF00"] }, 1, 0] }}, "count2": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF04"] }, 1, 0] }}}}])
+
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }}, "count1": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF00"] }, 1, 0] }}, "count2": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF04"] }, 1, 0] }}}}, {$group: {_id: { date: { $dateFromString: { dateString: "$_id.date" }}}, count1: "$count1", count2: "$count2"}}])
+
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }}, "count1": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF00"] }, 1, 0] }}, "count2": { "$sum": { "$cond": [{ "$eq": ["$FactoryCode", "GF04"] }, 1, 0] }}}}, {$group: {_id: { date: { $dateFromString: { dateString: "$_id.date" }}}, count1: { $sum: "$count1" }, count2: { $sum: "$count2" }}}])
+
+app.cars.aggregate([{$group: {_id: { date : { $dateToString: { format: "%Y-%m-%d", date: "$FactoryDepartureDate" } }}, "count1": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF00"] }, { "$eq": ["$Model", "ms"] }]}, 1, 0] }}, "count1": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF00"] }, { "$eq": ["$Model", "ms"] }]}, 1, 0] }}, "count2": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF00"] }, { "$eq": ["$Model", "mx"] }]}, 1, 0] }}, "count3": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF00"] }, { "$eq": ["$Model", "my"] }]}, 1, 0] }}, "count4": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF00"] }, { "$eq": ["$Model", "m3"] }]}, 1, 0] }}, "count5": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF04"] }, { "$eq": ["$Model", "ms"] }]}, 1, 0] }}, "count6": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF04"] }, { "$eq": ["$Model", "mx"] }]}, 1, 0] }}, "count7": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF04"] }, { "$eq": ["$Model", "my"] }]}, 1, 0] }}, "count8": { "$sum": { "$cond": [{$and: [{ "$eq": ["$FactoryCode", "GF04"] }, { "$eq": ["$Model", "m3"] }]}, 1, 0] }}}}, {$group: {_id: { date: { $dateFromString: { dateString: "$_id.date" }}}, "GF00/ms": { $sum: "$count1" }, "GF00/mx": { $sum: "$count2" }, "GF00/my": { $sum: "$count3" }, "GF00/m3": { $sum: "$count4" }, "GF04/ms": { $sum: "$count5" }, "GF04/mx": { $sum: "$count6" }, "GF04/my": { $sum: "$count7" }, "GF04/m3": { $sum: "$count8" }}}])
+
+app.megapacks.aggregate([
+{
+$match: { manufacturer: "tesla" }
+},
+{
+$group: {
+_id: "$type",
+statuses: {
+$push: { status: "$status" }
+}
+}
+},
+{
+$unwind: "$statuses"
+},
+{
+$group: {
+_id: { 
+  type: "$_id", 
+  status: "$statuses.status", 
+  count2: {
+    $switch: {
+      branches: [
+        {
+          case: {$eq: ["$statuses.status", "planning"]},
+          then: "1"
+        },
+        {
+          case: {$eq: ["$statuses.status", "construction"]},
+          then: "2"
+        },
+        {
+          case: {$eq: ["$statuses.status", "operation"]},
+          then: "3"
+        }
+      ],
+      default: "0"
+    }
+  }
+},
+count: { $sum: 1 },
+}
+}
+])
+
+
+
